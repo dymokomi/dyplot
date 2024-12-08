@@ -24,6 +24,9 @@ paper_size_y = 305
 paper_size_x = 356.0
 paper_size_y = 432.0
 
+paper_size_x = 129.0
+paper_size_y = 210.0
+
 dyplot = DyPlot(canvas_size_mm=(paper_size_x, paper_size_y))
 dyplot.go_home()
 dyplot.move_axis_to('z', 10.0)
@@ -69,26 +72,33 @@ squarness = 20
 squarness_multiplier = 1.1
 
 starting_coordingates = []
+the_index = 0
 for x in range(int(paper_size_x*line_density)):
 
     current_x = x/line_density
     current_y = 0 
-    starting_coordingates.append((current_x, current_y))
+    starting_coordingates.append((the_index, (current_x, current_y)))
+    the_index += 1
+
 starting_coordingates.reverse()
 for y in range(int(paper_size_y*line_density)):
 
     current_x = 0 
     current_y = y/line_density
-    starting_coordingates.append((current_x, current_y))
+    starting_coordingates.append((the_index, (current_x, current_y)))
+    the_index += 1
 
 # shuffle the list
 random.shuffle(starting_coordingates)
 
 random_points_to_add = 10000
 for _ in range(random_points_to_add):
-    starting_coordingates.append((random.uniform(0, paper_size_x), random.uniform(0, paper_size_y)))
+    starting_coordingates.append((the_index, (random.uniform(0, paper_size_x), random.uniform(0, paper_size_y))))
+    the_index += 1
 
-for (current_x, current_y) in starting_coordingates:
+lines_to_draw = []
+line_buffer = []
+for (the_index, (current_x, current_y)) in starting_coordingates:
     image_copy = dyplot.get_image_copy()
 
     need_lift = True
@@ -114,16 +124,39 @@ for (current_x, current_y) in starting_coordingates:
    
         if dyplot.check_radius((current_x + margin, current_y + margin), minimum_brightness + image_brightness * brightness_multiplier, image=image_copy):
             dyplot.line(current_x + margin, current_y + margin, target_x + margin, target_y + margin, need_lift=need_lift)  
+            if need_lift:
+                lines_to_draw.append(line_buffer)
+                line_buffer = [the_index]
+                line_buffer.append((current_x + margin, current_y + margin, target_x + margin, target_y + margin))
+            else:
+                line_buffer.append((current_x + margin, current_y + margin, target_x + margin, target_y + margin))
             need_lift = False
+            
         else:
             need_lift = True
+            lines_to_draw.append(line_buffer)
+            line_buffer = [the_index]
 
         current_x = target_x
         current_y = target_y
 
+# remove all empty buffers from lines_to_draw
+lines_to_draw = [line_buffer for line_buffer in lines_to_draw if len(line_buffer) > 1]
 
+# sort all lines to draw by first point x
+lines_to_draw.sort(key=lambda x: x[0])
 
-
+# redo gcode
+dyplot = DyPlot(canvas_size_mm=(paper_size_x, paper_size_y))
+dyplot.go_home()
+dyplot.move_axis_to('z', 10.0)
+for line in lines_to_draw:
+    need_lift = True
+    for (x1, y1, x2, y2) in line[1:]:
+        
+        dyplot.line(x1, y1, x2, y2, need_lift=need_lift)
+        need_lift = False
+    
 
 
 dyplot.move_axis_to('z', 10.0)
