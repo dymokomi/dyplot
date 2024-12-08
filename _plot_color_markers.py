@@ -38,12 +38,14 @@ image_width, image_height = image.size
 mm_to_px_ratio = image_width / plotted_width_mm
 
 
-virtual_pixel_size = 5.0
+virtual_pixel_size = 4.0
 virtual_pixels_in_x = int(plotted_width_mm / virtual_pixel_size)
 virtual_pixels_in_y = int(plotted_height_mm / virtual_pixel_size)
 
 noise_amount = 0.2
-max_circle_radius = 5.0
+max_circle_radius = 2.0
+
+do_color = "yellow"
 
 for px_x in range(virtual_pixels_in_x):
     dyplot.move_axis_to('z', 5.0)
@@ -58,21 +60,27 @@ for px_x in range(virtual_pixels_in_x):
         
         (yellow, red, blue) = dyplot.rgb_to_yrb(pixel_color[0], pixel_color[1], pixel_color[2])
         
-        dyplot.draw_circle_mm((margin + px_x * virtual_pixel_size, margin + px_y * virtual_pixel_size), 
+        if do_color == "yellow":
+            dyplot.draw_circle_mm((margin + px_x * virtual_pixel_size, margin + px_y * virtual_pixel_size), 
                               yellow * max_circle_radius, 
                               0.5,
                               "yellow",
-                              multiply_blend=True)
-        dyplot.draw_circle_mm((margin + px_x * virtual_pixel_size, margin + px_y * virtual_pixel_size), 
+                              multiply_blend=True,
+                              feedrate=feedrate)
+        if do_color == "red":
+            dyplot.draw_circle_mm((margin + px_x * virtual_pixel_size, margin + px_y * virtual_pixel_size), 
                               red * max_circle_radius, 
                               0.5,
                               "red",
-                              multiply_blend=True)
-        dyplot.draw_circle_mm((margin + px_x * virtual_pixel_size, margin + px_y * virtual_pixel_size), 
+                              multiply_blend=True,
+                              feedrate=feedrate)
+        if do_color == "blue":
+            dyplot.draw_circle_mm((margin + px_x * virtual_pixel_size, margin + px_y * virtual_pixel_size), 
                               blue * max_circle_radius, 
                               0.5,
                               "blue",
-                              multiply_blend=True)
+                              multiply_blend=True,
+                              feedrate=feedrate)
         
 
 
@@ -83,5 +91,5 @@ for px_x in range(virtual_pixels_in_x):
 dyplot.move_axis_to('z', 10.0)
 dyplot.go_home()
 dyplot.move_axis_to('z', 10.0)
-dyplot.save_gcode("test.gcode")
+dyplot.save_gcode(f"pass_{do_color}.gcode")
 dyplot.show_image()

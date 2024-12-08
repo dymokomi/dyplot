@@ -38,14 +38,15 @@ class DyPlot:
         draw = ImageDraw.Draw(self.image)
         draw.line([start_point_px, end_point_px], fill=color, width=thickness_px)
 
-    def draw_circle_mm(self, center_mm, radius_mm, thickness_mm, color="black", dpi=300, multiply_blend=False):
+    def draw_circle_mm(self, center_mm, radius_mm, thickness_mm, color="black", dpi=300, multiply_blend=False, feedrate=1000):
 
         start_x = center_mm[0] + radius_mm
         start_y = center_mm[1]
         self.gcode.append(f"G0 Z2.0")
         self.gcode.append(f"G0 X{start_x} Y{start_y}")
-        self.gcode.append(f"G0 Z0.0")
-        self.gcode.append(f"G2 X{start_x} Y{start_y} I{-radius_mm} J0")
+        if radius_mm > 0.0:
+            self.gcode.append(f"G0 Z0.0")
+            self.gcode.append(f"G2 X{start_x} Y{start_y} I{-radius_mm} J0 F{feedrate}")
         
 
 
@@ -54,15 +55,9 @@ class DyPlot:
                         self.mm_to_pixels(center_mm[1], dpi))
         radius_px = self.mm_to_pixels(radius_mm, dpi)
         thickness_px = self.mm_to_pixels(thickness_mm, dpi)
-        if multiply_blend:
-            # Create a new transparent image for the circle
-            circle_image = Image.new('RGB', self.image.size, (1, 1, 1))
-            draw = ImageDraw.Draw(circle_image)
-            draw.ellipse([center_px[0] - radius_px, center_px[1] - radius_px, center_px[0] + radius_px, center_px[1] + radius_px], outline=color, width=thickness_px)
-            self.image = Image.composite(circle_image, self.image, circle_image)
-        else:
-            draw = ImageDraw.Draw(self.image)
-            draw.ellipse([center_px[0] - radius_px, center_px[1] - radius_px, center_px[0] + radius_px, center_px[1] + radius_px], outline=color, width=thickness_px)
+
+        draw = ImageDraw.Draw(self.image)
+        draw.ellipse([center_px[0] - radius_px, center_px[1] - radius_px, center_px[0] + radius_px, center_px[1] + radius_px], outline=color, width=thickness_px)
         
     def save_gcode(self, filename):
         with open(filename, 'w') as f:
