@@ -28,6 +28,7 @@ class DyPlot:
         width_px = self.mm_to_pixels(width_mm, dpi)
         height_px = self.mm_to_pixels(height_mm, dpi)
         self.image = Image.new("RGB", (width_px, height_px), color)
+
     def draw_line_mm(self, start_point_mm, end_point_mm, thickness_mm, color="black", dpi=300):
     
         start_point_px = (self.mm_to_pixels(start_point_mm[0], dpi), 
@@ -58,7 +59,26 @@ class DyPlot:
 
         draw = ImageDraw.Draw(self.image)
         draw.ellipse([center_px[0] - radius_px, center_px[1] - radius_px, center_px[0] + radius_px, center_px[1] + radius_px], outline=color, width=thickness_px)
-        
+
+    def get_image_copy(self):
+        return self.image.copy()
+    
+    def check_radius(self, center_mm, radius_mm, dpi=300, image=None):
+        center_px = (self.mm_to_pixels(center_mm[0], dpi), 
+                        self.mm_to_pixels(center_mm[1], dpi))
+        radius_px = self.mm_to_pixels(radius_mm, dpi)
+
+        # check if all pixels on image within the radius are white
+        for x in range(center_px[0] - radius_px, center_px[0] + radius_px):
+            for y in range(center_px[1] - radius_px, center_px[1] + radius_px):
+                if image is None:
+                    if self.image.getpixel((x, y)) != (255, 255, 255):
+                        return False
+                else:
+                    if image.getpixel((x, y)) != (255, 255, 255):
+                        return False
+        return True 
+
     def save_gcode(self, filename):
         with open(filename, 'w') as f:
             for line in self.gcode:
@@ -147,19 +167,27 @@ class DyPlot:
         self.move_axis_to('y', 0.0)     
         self.move_axis_to('z', 0.0)
 
-    def line(self, x1, y1, x2, y2, z_offset=0.0, feedrate=None):
+    def line(self, x1, y1, x2, y2, z_offset=0.0, feedrate=None, need_lift=True):
         self.gcode.append("")
         self.gcode.append(";draw line")
         self.mode_absolute()
-        self.move_axis_to('z', 5.0)
-        self.move_to(x1, y1, 5.0)
+        
+        if need_lift:
+            self.move_axis_to('z', 5.0)
+            self.move_to(x1, y1, 5.0)
+        else:
+            self.move_to(x1, y1, z_offset)
 
         # Lower pen
-        self.move_axis_to('z', z_offset)
+        if  need_lift:
+            self.move_axis_to('z', z_offset)
 
         # Draw line
         self.move_to(x2, y2, z_offset, feedrate)
-        self.move_axis_to('z', 5.0)
+        if need_lift:
+            self.move_axis_to('z', 5.0)
+
+
         self.draw_line_mm((x2, y2), (x1, y1), self.pen_width_mm, "black")
 
     def rgb_to_yrb(self, r, g, b):
