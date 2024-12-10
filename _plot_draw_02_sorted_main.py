@@ -24,8 +24,8 @@ paper_size_y = 305
 paper_size_x = 356.0
 paper_size_y = 432.0
 
-paper_size_x = 129.0
-paper_size_y = 210.0
+#paper_size_x = 129.0
+#paper_size_y = 210.0
 
 dyplot = DyPlot(canvas_size_mm=(paper_size_x, paper_size_y))
 dyplot.go_home()
